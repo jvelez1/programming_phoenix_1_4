@@ -7,6 +7,7 @@ defmodule Rumbl.Multimedia do
   alias Rumbl.Repo
   alias Rumbl.Accounts
 
+  alias Rumbl.Multimedia.Category
   alias Rumbl.Multimedia.Video
 
   @doc """
@@ -114,6 +115,16 @@ defmodule Rumbl.Multimedia do
   """
   def change_video(%Video{} = video) do
     Video.changeset(video, %{})
+  end
+
+  def create_category!(name) do
+    Repo.insert!(%Category{name: name}, on_conflict: :nothing)
+  end
+
+  def list_alphabetical_categories do
+    Category
+    |> Category.alphabetical
+    |> Repo.all()
   end
 
   defp user_videos_query(query, %Accounts.User{id: user_id}) do
