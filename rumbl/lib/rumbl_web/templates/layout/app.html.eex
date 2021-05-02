@@ -15,6 +15,9 @@
             <%= if @current_user do %>
               <li><%= @current_user.username%> </li>
               <li>
+                <%= link "My videos", to: Routes.video_path(@conn, :index)%>
+              </li>
+              <li>
                  <%= link "Log out",
                        to: Routes.session_path(@conn, :delete, @current_user),
                        method: "delete" %>
