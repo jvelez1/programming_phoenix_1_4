@@ -12,77 +12,101 @@ defmodule RumblWeb.VideoControllerTest do
     video
   end
 
-  describe "index" do
-    test "lists all videos", %{conn: conn} do
+  describe "when user is not logged in" do
+    test "requires user authentication on all actions", %{conn: conn} do
+      Enum.each(
+        [
+          get(conn, Routes.video_path(conn, :new)),
+          get(conn, Routes.video_path(conn, :index)),
+          get(conn, Routes.video_path(conn, :show, "123")),
+          get(conn, Routes.video_path(conn, :edit, "123")),
+          put(conn, Routes.video_path(conn, :update, "123", %{})),
+          post(conn, Routes.video_path(conn, :create, %{})),
+          delete(conn, Routes.video_path(conn, :delete, "123"))
+        ],
+        fn conn ->
+          assert html_response(conn, 302)
+          assert conn.halted
+        end
+      )
+    end
+  end
+
+  describe "when user is logged in" do
+    setup %{conn: conn, login_as: username} do
+      user = user_fixture(username: username)
+      conn = assign(conn, :current_user, user)
+
+      {:ok, conn: conn, user: user}
+    end
+
+    @tag login_as: "max"
+    test "lists all user's videos on index", %{conn: conn, user: user} do
+      user_video = video_fixture(user, title: "funny cats")
+      other_video = video_fixture(
+        user_fixture(username: "another_user"),
+        title: "other funny cats"
+      )
+
       conn = get(conn, Routes.video_path(conn, :index))
-      assert html_response(conn, 200) =~ "Listing Videos"
+      response = html_response(conn, 200)
+      assert response =~ ~r/Listing Videos/
+      assert response =~ user_video.title
+      refute response =~ other_video.title
     end
-  end
 
-  describe "new video" do
-    test "renders form", %{conn: conn} do
-      conn = get(conn, Routes.video_path(conn, :new))
-      assert html_response(conn, 200) =~ "New Video"
-    end
-  end
+    alias Rumbl.Multimedia
 
-  describe "create video" do
-    test "redirects to show when data is valid", %{conn: conn} do
-      conn = post(conn, Routes.video_path(conn, :create), video: @create_attrs)
+    @create_attrs %{
+      url: "http://youtu.be",
+      title: "vid",
+      description: "a vid"}
+    @invalid_attrs %{title: "invalid"}
 
-      assert %{id: id} = redirected_params(conn)
-      assert redirected_to(conn) == Routes.video_path(conn, :show, id)
+    defp video_count, do: Enum.count(Multimedia.list_videos())
 
-      conn = get(conn, Routes.video_path(conn, :show, id))
+    @tag login_as: "max"
+    test "creates user video and redirects", %{conn: conn, user: user} do
+      create_conn =
+        post conn, Routes.video_path(conn, :create), video: @create_attrs
+
+      assert %{id: id} = redirected_params(create_conn)
+      assert redirected_to(create_conn) ==
+        Routes.video_path(create_conn, :show, id)
+
+      conn = get conn, Routes.video_path(conn, :show, id)
       assert html_response(conn, 200) =~ "Show Video"
+
+      assert Multimedia.get_video!(id).user_id == user.id
     end
 
-    test "renders errors when data is invalid", %{conn: conn} do
-      conn = post(conn, Routes.video_path(conn, :create), video: @invalid_attrs)
-      assert html_response(conn, 200) =~ "New Video"
-    end
-  end
-
-  describe "edit video" do
-    setup [:create_video]
-
-    test "renders form for editing chosen video", %{conn: conn, video: video} do
-      conn = get(conn, Routes.video_path(conn, :edit, video))
-      assert html_response(conn, 200) =~ "Edit Video"
+    @tag login_as: "max"
+    test "does not create vid, renders errors when invalid", %{conn: conn} do
+      count_before = video_count()
+      conn =
+        post conn, Routes.video_path(conn, :create), video: @invalid_attrs
+      assert html_response(conn, 200) =~ "check the errors"
+      assert video_count() == count_before
     end
   end
 
-  describe "update video" do
-    setup [:create_video]
+  test "authorizes actions against access by other users", %{conn: conn} do
+    owner = user_fixture(username: "owner")
+    video = video_fixture(owner, @create_attrs)
+    non_owner = user_fixture(username: "sneaky")
+    conn = assign(conn, :current_user, non_owner)
 
-    test "redirects when data is valid", %{conn: conn, video: video} do
-      conn = put(conn, Routes.video_path(conn, :update, video), video: @update_attrs)
-      assert redirected_to(conn) == Routes.video_path(conn, :show, video)
-
-      conn = get(conn, Routes.video_path(conn, :show, video))
-      assert html_response(conn, 200) =~ "some updated description"
+    assert_error_sent :not_found, fn ->
+      get(conn, Routes.video_path(conn, :show, video))
     end
-
-    test "renders errors when data is invalid", %{conn: conn, video: video} do
-      conn = put(conn, Routes.video_path(conn, :update, video), video: @invalid_attrs)
-      assert html_response(conn, 200) =~ "Edit Video"
+    assert_error_sent :not_found, fn ->
+      get(conn, Routes.video_path(conn, :edit, video))
     end
-  end
-
-  describe "delete video" do
-    setup [:create_video]
-
-    test "deletes chosen video", %{conn: conn, video: video} do
-      conn = delete(conn, Routes.video_path(conn, :delete, video))
-      assert redirected_to(conn) == Routes.video_path(conn, :index)
-      assert_error_sent 404, fn ->
-        get(conn, Routes.video_path(conn, :show, video))
-      end
+    assert_error_sent :not_found, fn ->
+      put(conn, Routes.video_path(conn, :update, video, video: @create_attrs))
     end
-  end
-
-  defp create_video(_) do
-    video = fixture(:video)
-    {:ok, video: video}
+    assert_error_sent :not_found, fn ->
+      delete(conn, Routes.video_path(conn, :delete, video))
+    end
   end
 end
