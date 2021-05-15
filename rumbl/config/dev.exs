@@ -1,11 +1,10 @@
 use Mix.Config
 
+database_url = System.get_env("DATABASE_URL")
+
 # Configure your database
 config :rumbl, Rumbl.Repo,
-  username: "postgres",
-  password: "postgres",
-  database: "rumbl_dev",
-  hostname: "localhost",
+  url: database_url,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
@@ -60,7 +59,7 @@ config :rumbl, RumblWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/rumbl_web/{live,views}/.*(ex)$",
+      ~r"lib/rumbl_web/(live|views)/.*(ex)$",
       ~r"lib/rumbl_web/templates/.*(eex)$"
     ]
   ]
