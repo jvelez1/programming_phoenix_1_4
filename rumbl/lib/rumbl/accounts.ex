@@ -2,6 +2,7 @@ defmodule Rumbl.Accounts do
   @moduledoc """
     The account context
   """
+  import Ecto.Query
   alias Rumbl.Repo
   alias Rumbl.Accounts.User
 
@@ -29,6 +30,12 @@ defmodule Rumbl.Accounts do
 
   def get_user_by(params) do
     Repo.get_by(User, params)
+  end
+
+  def list_users_by_ids(ids) do
+    Repo.all(
+      from u in User, where: u.id in ^ids
+    )
   end
 
   def authenticate_by_username_and_pass(user_name, given_pass) do
