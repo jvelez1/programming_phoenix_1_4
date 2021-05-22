@@ -12,6 +12,5 @@ mix ecto.create
 mix ecto.migrate
 mix run priv/repo/seeds.exs
 
-
 # Start server
 mix phx.server
