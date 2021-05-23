@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  db:
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    image: 'postgres:11-alpine'
+    restart: always
+    volumes:
+      - 'pgdata:/var/lib/postgresql/data'
+    ports:
+     - '5433:5432'
+  apps:
+    build: .
+    entrypoint: entrypoint.sh
+    command: mix phx.server
+    depends_on:
+      - db
+    environment:
+      MIX_ENV: dev
+      DATABASE_URL: postgres://postgres:postgres@db:5432/rumbl_dev
+    env_file:
+      - .env
+    ports:
+      - '4000:4000'
+    volumes:
+      - .:/app
+    tty: true
+    stdin_open: true
+  # test:
+  #   build: .
+  #   command: mix test
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     MIX_ENV: test
+  #     DATABASE_URL: postgres://postgres:postgres@db:5432/rumbl_test
+  #   env_file:
+  #     - .test_env
+  #   volumes:
+  #     - .:/app
+volumes:
+  pgdata:
