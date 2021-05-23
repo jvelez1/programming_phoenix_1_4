@@ -84,5 +84,5 @@ defmodule RumblWeb.Presence do
   end
 
   use Phoenix.Presence, otp_app: :rumbl_web,
-                        pubsub_server: Rumbl.PubSub
+                        pubsub_server: RumblWeb.PubSub
 end
