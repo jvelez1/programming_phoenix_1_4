@@ -15,11 +15,11 @@ services:
   apps:
     build: .
     entrypoint: entrypoint.sh
-    command: mix phx.server
     depends_on:
       - db
     environment:
       MIX_ENV: dev
+      WOLFRAM_APP_ID: ADD_YOUR_WOLFRAM_APP_ID
       DATABASE_URL: postgres://postgres:postgres@db:5432/rumbl_dev
     env_file:
       - .env
@@ -29,17 +29,5 @@ services:
       - .:/app
     tty: true
     stdin_open: true
-  # test:
-  #   build: .
-  #   command: mix test
-  #   depends_on:
-  #     - db
-  #   environment:
-  #     MIX_ENV: test
-  #     DATABASE_URL: postgres://postgres:postgres@db:5432/rumbl_test
-  #   env_file:
-  #     - .test_env
-  #   volumes:
-  #     - .:/app
 volumes:
   pgdata:

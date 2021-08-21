@@ -15,3 +15,4 @@ alias Rumbl.Multimedia
 for category <- ~w(Action Drama Romance Comedy Sci-fi) do
   Multimedia.create_category!(category)
 end
+{:ok, _} = Rumbl.Accounts.register_user(%{name: "Wolfram", username: "wolfram", password: "123456789"})
