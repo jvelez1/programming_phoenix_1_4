@@ -19,3 +19,5 @@ config :logger, level: :warn
 
 
 config :pbkdf2_elixir, :rounds, 1
+
+config :info_sys, :wolfram, app_id: "1234", http_client: InfoSys.Test.HTTPClient
